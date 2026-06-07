@@ -6,9 +6,9 @@
 
 - `web`: 制作者が操作する Next.js アプリケーション
 - `api`: プロジェクト、ジョブ、ファイル、認証、永続化を扱う Fastify API
-- `worker`: FBX 解析、モーション補正、成果物生成を扱う Python サービス
+- `worker`: 2D 動画解析、人体姿勢推定、3D 骨格モーション生成、モーション補正、成果物生成を扱う Python サービス
 
-Web/API は `/apps` 配下の pnpm workspace と Turborepo で管理し、worker は `/worker` 配下で uv により管理する。モーション補正は計算量が大きく、外部ライブラリ依存も増えやすいため、Node.js の API から分離して worker に集約する。
+Web/API は `/apps` 配下の pnpm workspace と Turborepo で管理し、worker は `/worker` 配下で uv により管理する。動画解析、姿勢推定、3D 骨格化、モーション補正は計算量が大きく、外部ライブラリ依存も増えやすいため、Node.js の API から分離して worker に集約する。
 
 ## 2. コンテナ間の責務分担
 
@@ -33,19 +33,19 @@ storage / database / generated artifacts
 #### 役割
 
 - プロジェクト一覧、詳細、モーション調整画面を提供する
-- FBX ファイルのアップロード導線を提供する
+- 武器を振る 2D 動画ファイルのアップロード導線を提供する
 - 武器パラメータ、キャラクター属性、補正プリセットを入力する UI を提供する
-- 補正前後の 3D プレビューを表示する
+- 入力動画、推定 3D、補正後 3D の比較プレビューを表示する
 - ジョブ進捗、失敗理由、成果物ダウンロードを表示する
 
 #### 主な機能
 
 - ダッシュボード
 - プロジェクト作成・編集
-- モーションファイル登録
+- 動画ファイル登録
 - 武器・キャラクター設定フォーム
-- 3D モーションビューア
-- 補正ジョブ実行ボタン
+- 動画同期付き 3D モーションビューア
+- 3D 生成・補正ジョブ実行ボタン
 - ジョブ履歴と成果物一覧
 
 #### 推奨ライブラリ
@@ -66,7 +66,8 @@ storage / database / generated artifacts
 
 - `/apps/web/src/app/(dashboard)`: ダッシュボードとプロジェクト画面
 - `/apps/web/src/features/projects`: プロジェクト管理
-- `/apps/web/src/features/motions`: モーション登録、プレビュー、補正操作
+- `/apps/web/src/features/videos`: 動画登録とアップロード
+- `/apps/web/src/features/motions`: 推定 3D モーション、プレビュー、補正操作
 - `/apps/web/src/features/jobs`: ジョブ進捗と履歴
 - `/apps/web/src/lib/api`: API クライアント
 - `/apps/web/src/components/ui`: 共通 UI
@@ -76,18 +77,18 @@ storage / database / generated artifacts
 #### 役割
 
 - Web からの HTTP API を受け付ける
-- プロジェクト、入力ファイル、補正パラメータ、ジョブ状態、成果物メタデータを管理する
-- worker へ補正ジョブを依頼する
+- プロジェクト、入力動画、推定 3D モーション、補正パラメータ、ジョブ状態、成果物メタデータを管理する
+- worker へ 3D 生成・補正ジョブを依頼する
 - ジョブ状態と成果物 URL を Web へ返す
 - 認証・認可、入力検証、監査ログを担う
 
 #### 主な機能
 
 - プロジェクト CRUD
-- モーションファイル登録とアップロード URL 発行
+- 動画ファイル登録とアップロード URL 発行
 - 武器パラメータ管理
 - キャラクター属性管理
-- 補正ジョブ作成
+- 3D 生成・補正ジョブ作成
 - ジョブ状態取得
 - 成果物一覧取得
 - worker との連携 API
@@ -99,7 +100,7 @@ storage / database / generated artifacts
 - `zod` または `@sinclair/typebox`: request/response schema
 - `@fastify/cors`: CORS 制御
 - `@fastify/jwt`: 認証トークン検証
-- `@fastify/multipart`: FBX などのファイルアップロード受け口
+- `@fastify/multipart`: 動画や FBX などのファイルアップロード受け口
 - `@fastify/swagger`、`@fastify/swagger-ui`: API 仕様の生成と確認
 - `prisma`: DB schema と永続化
 - `pino`: Fastify と連携するロギング
@@ -108,10 +109,11 @@ storage / database / generated artifacts
 #### 実装配置
 
 - `/apps/api/src/routes/projects`: プロジェクト API
-- `/apps/api/src/routes/motions`: 入力モーション API
+- `/apps/api/src/routes/videos`: 入力動画 API
+- `/apps/api/src/routes/motions`: 推定・補正済みモーション API
 - `/apps/api/src/routes/weapons`: 武器設定 API
 - `/apps/api/src/routes/characters`: キャラクター設定 API
-- `/apps/api/src/routes/jobs`: 補正ジョブ API
+- `/apps/api/src/routes/jobs`: 3D 生成・補正ジョブ API
 - `/apps/api/src/services`: ユースケース
 - `/apps/api/src/repositories`: DB アクセス
 - `/apps/api/src/plugins`: CORS、JWT、Prisma、Swagger
@@ -122,8 +124,9 @@ storage / database / generated artifacts
 
 #### 役割
 
-- API から依頼された補正ジョブを受け付ける
-- FBX モーションを解析する
+- API から依頼された 3D 生成・補正ジョブを受け付ける
+- 入力動画から人体姿勢を推定する
+- 2D 姿勢列を人型 3D 骨格モーションへ変換する
 - 武器パラメータとキャラクター属性をもとに補正・誇張を行う
 - 補正済み FBX と差分レポートを生成する
 - ジョブ進捗と失敗理由を API へ返す
@@ -131,9 +134,11 @@ storage / database / generated artifacts
 #### 主な機能
 
 - ジョブ受付
-- 入力ファイル取得
-- FBX 解析
-- ボーン階層とキーフレーム抽出
+- 入力動画取得
+- 動画フレーム抽出
+- 2D 人体姿勢推定
+- 3D 骨格モーション生成
+- ボーン階層とキーフレーム生成
 - 武器パラメータに基づく慣性・重心補正
 - キャラクター属性に基づくタイミング補正
 - ゲーム向け誇張処理
@@ -145,23 +150,30 @@ storage / database / generated artifacts
 - `fastapi`: worker の HTTP インターフェース
 - `uvicorn`: FastAPI 起動
 - `pydantic`: API 入出力、ジョブ設定、補正パラメータの検証
+- `opencv-python`: 動画読み込み、フレーム抽出、前処理
+- `mediapipe`: 初期プロトタイプ向けの人体姿勢推定
 - `numpy`: 時系列データ、ベクトル、回転値の数値計算
 - `scipy`: 補間、スムージング、回転表現の処理
 - `trimesh`: 3D データ処理の補助
 - `pyassimp` または `fbx` SDK 系ライブラリ: FBX 読み書き
+- Blender CLI: FBX 変換、リターゲット、出力検証の候補
 - `redis`、`rq`、または `arq`: 非同期ジョブキュー
 - `httpx`: API への状態通知、ストレージ連携
 - `pytest`: unit/integration テスト
 - `ruff`: Python lint/format
 
-FBX ライブラリは環境構築難度が高い可能性があるため、初期検証では `pyassimp`、Blender CLI、Autodesk FBX SDK のいずれが devcontainer と本番環境で安定するかを比較してから採用する。重い機械学習系ライブラリや PyTorch は、devcontainer 資料の方針に従い、必要性が確定するまで直接追加しない。
+人体姿勢推定は初期検証では `mediapipe` を候補にし、より高精度な MotionBERT、VIBE、OpenPose 系のモデルは精度要件と実行時間を確認してから採用する。FBX ライブラリは環境構築難度が高い可能性があるため、初期検証では `pyassimp`、Blender CLI、Autodesk FBX SDK のいずれが devcontainer と本番環境で安定するかを比較してから採用する。重い機械学習系ライブラリや PyTorch は、devcontainer 資料の方針に従い、必要性が確定するまで直接追加しない。
 
 #### 実装配置
 
 - `/worker/app/api/routes/jobs.py`: ジョブ受付と状態確認
 - `/worker/app/services/job_service.py`: ジョブ実行のユースケース
-- `/worker/app/services/motion_analysis_service.py`: FBX 解析
+- `/worker/app/services/video_analysis_service.py`: 動画解析とフレーム抽出
+- `/worker/app/services/pose_estimation_service.py`: 2D 人体姿勢推定
+- `/worker/app/services/motion_generation_service.py`: 2D 姿勢列から 3D 骨格モーション生成
+- `/worker/app/services/motion_analysis_service.py`: 生成済み 3D モーション解析
 - `/worker/app/services/motion_correction_service.py`: 補正・強調処理
+- `/worker/app/tasks/definitions/video_to_motion.py`: 動画から 3D モーション生成ジョブ
 - `/worker/app/tasks/definitions/motion_correction.py`: 補正ジョブ本体
 - `/worker/app/integrations/storage`: 入力・出力ファイルの取得と保存
 - `/worker/app/schemas/job.py`: ジョブ入力・出力 schema
@@ -174,6 +186,7 @@ FBX ライブラリは環境構築難度が高い可能性があるため、初�
 Web と API の境界で使う型を配置する。
 
 - `Project`
+- `VideoAsset`
 - `MotionAsset`
 - `WeaponProfile`
 - `CharacterProfile`
@@ -189,6 +202,7 @@ Prisma schema と Prisma Client を管理する。初期候補の主要モデル
 
 - `User`
 - `Project`
+- `VideoAsset`
 - `MotionAsset`
 - `WeaponProfile`
 - `CharacterProfile`
@@ -202,34 +216,33 @@ Web、API、worker 連携で利用するトレース ID、ジョブ ID、プロ�
 
 ## 4. データフロー
 
-### 4.1 モーション登録
+### 4.1 動画登録
 
-1. ユーザーが Web から FBX を登録する
+1. ユーザーが Web から武器振りの 2D 動画を登録する
 2. Web が API へアップロード要求を送る
-3. API が入力ファイルのメタデータを保存する
+3. API が入力動画のメタデータを保存する
 4. API が保存先またはアップロード URL を返す
 5. Web が登録完了後にプロジェクト詳細を更新する
 
-### 4.2 補正ジョブ実行
+### 4.2 3D 生成・補正ジョブ実行
 
 1. ユーザーが Web で武器・キャラクター・プリセットを設定する
-2. Web が API へ補正ジョブ作成を要求する
+2. Web が API へ 3D 生成・補正ジョブ作成を要求する
 3. API がジョブを `queued` として保存する
 4. API が worker へジョブを依頼する
-5. worker が入力ファイルを取得し、補正処理を実行する
+5. worker が入力動画を取得し、フレーム抽出、姿勢推定、3D 骨格化、補正処理を実行する
 6. worker が進捗と結果を API へ通知する
-7. API が成果物メタデータを保存する
+7. API が推定 3D モーションと補正済み成果物のメタデータを保存する
 8. Web がジョブ状態を取得し、成果物を表示する
 
 ### 4.3 プレビュー
 
-1. Web が API から補正前後の成果物 URL を取得する
-2. Web が Three.js ビューアでモーションを読み込む
-3. ユーザーが再生、停止、フレーム送り、補正前後比較を行う
+1. Web が API から入力動画、推定 3D、補正後 3D の成果物 URL を取得する
+2. Web が動画プレイヤーと Three.js ビューアでモーションを読み込む
+3. ユーザーが再生、停止、フレーム送り、入力動画と 3D モーションの同期比較、補正前後比較を行う
 
 ## 5. 初期採用しないもの
 
-- 本格的な動画姿勢推定
 - 大規模な機械学習モデル
 - チームコラボレーション機能
 - DCC ツール内プラグイン
@@ -244,7 +257,7 @@ Web、API、worker 連携で利用するトレース ID、ジョブ ID、プロ�
 - 型チェック
 - lint
 - 主要画面のコンポーネントテスト
-- 3D プレビューはサンプルファイルで読み込み確認
+- 入力動画と 3D プレビューの同期表示をサンプルファイルで確認
 
 ### 6.2 api
 
@@ -255,7 +268,8 @@ Web、API、worker 連携で利用するトレース ID、ジョブ ID、プロ�
 
 ### 6.3 worker
 
-- FBX 解析の fixture test
+- 動画フレーム抽出と姿勢推定の fixture test
+- 3D 骨格モーション生成の unit test
 - 補正パラメータによる時系列変化の unit test
 - ジョブ受付と状態更新の integration test
 - 失敗時のリトライ、タイムアウト、エラーメッセージ検証
