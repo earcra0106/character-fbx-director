@@ -9,3 +9,5 @@
 
 devcontainer環境の概要: `docs/devcontainer-overview.md`
 フォルダ構成: `docs/folder-architechture/workspace.md`
+要件定義: `docs/requirements/application-requirements.md`
+各コンテナの機能: `docs/architecture/container-responsibilities.md`

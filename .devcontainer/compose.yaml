@@ -65,6 +65,11 @@ services:
               count: all
               capabilities:
                 - gpu
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
 
 volumes:
   pnpm_store:
