@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create PR"
+  short_description: "ブランチ状態を確認し、ghでmain向けGitHub PRを作成してURL報告"
+  default_prompt: "Use $create-pr to create a GitHub pull request for the current branch."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finish Work"
+  short_description: "現在ブランチを確認し、mainへ切替、origin/mainをpullして最新化"
+  default_prompt: "Use $finish-work after finishing work to update the main branch."

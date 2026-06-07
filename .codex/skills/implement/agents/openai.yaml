@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement"
+  short_description: "ブランチ作成、コード実装、検証、git add、コミット"
+  default_prompt: "Use $implement to implement code changes with verification and commit."

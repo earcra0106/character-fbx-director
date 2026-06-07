@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Work"
+  short_description: "要件を整理し、作業ブランチを作成　/plan モード推奨"
+  default_prompt: "Use $start-work to define the work scope before starting."

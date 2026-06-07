@@ -1,0 +1,56 @@
+prefix_rule(
+    pattern=["git", [
+        "--version",
+        "branch",
+        "log",
+        "remote",
+        "add",
+        "push",
+        "checkout",
+        "pull",
+        "commit",
+        "diff",
+        "status",
+        "ls-files",
+        "rev-parse"
+    ]],
+    decision="allow",
+)
+prefix_rule(pattern=["gh", "pr", "create"], decision="allow")
+prefix_rule(pattern=["echo", "$REMOTE_CONTAINERS"], decision="allow")
+prefix_rule(pattern=["container_ls"], decision="allow")
+prefix_rule(pattern=["sed", "-n"], decision="allow")
+prefix_rule(pattern=["rg"], decision="allow")
+prefix_rule(pattern=["find"], decision="allow")
+prefix_rule(pattern=["sed"], decision="allow")
+prefix_rule(pattern=["ls"], decision="allow")
+prefix_rule(pattern=["date"], decision="allow")
+prefix_rule(pattern=["mkdir"], decision="allow")
+prefix_rule(pattern=["touch"], decision="allow")
+prefix_rule(pattern=["awk"], decision="allow")
+prefix_rule(pattern=["cat"], decision="allow")
+prefix_rule(pattern=["xargs"], decision="allow")
+prefix_rule(pattern=["tee"], decision="allow")
+prefix_rule(pattern=["head"], decision="allow")
+prefix_rule(pattern=["tail"], decision="allow")
+prefix_rule(pattern=["perl", "-0pi", "-e"], decision="allow")
+prefix_rule(
+    pattern = ["rm", "-fr"],
+    decision = "forbidden",
+)
+prefix_rule(
+    pattern = ["rm", "-f", "-r"],
+    decision = "forbidden",
+)
+prefix_rule(
+    pattern = ["rm", "-r", "-f"],
+    decision = "forbidden",
+)
+prefix_rule(
+    pattern = ["rm", "-rf", ["/", "/*", "/workspace", "/workspace/", ".", "./", "..", "../", "*"]],
+    decision = "forbidden",
+)
+prefix_rule(
+    pattern = ["rm", "-rf", "node_modules"],
+    decision = "allow",
+)

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Continue Branch"
+  short_description: "現在ブランチで追加修正し、検証、git add、コミット"
+  default_prompt: "Use $continue-branch to make additional changes on the current branch and commit them."

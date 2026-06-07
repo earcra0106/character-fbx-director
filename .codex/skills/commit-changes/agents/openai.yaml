@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Changes"
+  short_description: "現在差分を確認し、必要ならブランチ作成、検証、コミット"
+  default_prompt: "Use $commit-changes to review the working tree and commit the selected changes."

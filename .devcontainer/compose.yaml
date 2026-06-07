@@ -1,0 +1,72 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        - BASE_IMAGE=python:3.12.13-slim-bookworm
+        - UV_IMAGE=ghcr.io/astral-sh/uv:0.11.19
+        - NODE_IMAGE=node:24.16.0-slim
+        - PNPM_VERSION=11.5.2
+    tty: true
+    stdin_open: true
+    working_dir: /workspace
+    volumes:
+      # プロジェクトルート
+      - type: bind
+        source: ..
+        target: /workspace
+      # 設定をホストと共有
+      - type: bind
+        source: ${HOME}/.codex
+        target: /home/dev/.codex
+        consistency: cached
+      - type: bind
+        source: ${HOME}/.ssh/config
+        target: /home/dev/.ssh/config
+        read_only: true
+        consistency: cached
+      - type: bind
+        source: ${HOME}/.ssh/known_hosts
+        target: /home/dev/.ssh/known_hosts
+        read_only: true
+        consistency: cached
+      - type: bind
+        source: ${SSH_AUTH_SOCK:-/tmp/dummy_ssh_auth.sock}
+        target: /host_config/ssh_auth.sock
+        read_only: true
+        consistency: cached
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/dev/.gitconfig
+        consistency: cached
+      - type: bind
+        source: ${HOME}/.config/gh
+        target: /home/dev/.config/gh
+        consistency: cached
+      # pnpm のキャッシュ
+      - type: volume
+        source: pnpm_store
+        target: /home/dev/.local/share/pnpm/store
+      # uvの仮想環境をバインドマウントから除外
+      - type: volume
+        source: worker_venv
+        target: /workspace/worker/.venv
+      - type: volume
+        source: uv_cache
+        target: /home/dev/.cache/uv
+    command: sleep infinity
+    init: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+
+volumes:
+  pnpm_store:
+  uv_cache:
+  worker_venv:

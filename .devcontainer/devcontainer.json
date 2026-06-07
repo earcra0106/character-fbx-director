@@ -1,0 +1,20 @@
+{
+  "name": "${localWorkspaceFolderBasename}-devcontainer",
+  "dockerComposeFile": "./compose.yaml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "dev",
+  "remoteEnv": {
+    "TERM": "xterm-256color",
+    "REMOTE_CONTAINERS": "true",
+    "SSH_AUTH_SOCK": "/home/dev/.ssh/ssh_auth.sock",
+    "UV_LINK_MODE": "copy"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1.1.0": {
+      "version": "2.93.0"
+    }
+  },
+  "initializeCommand": ".devcontainer/setup-hosts.sh",
+  "postCreateCommand": ".devcontainer/post-create.sh"
+}

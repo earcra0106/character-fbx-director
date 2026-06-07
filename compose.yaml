@@ -1,0 +1,60 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: .docker/web/local.Dockerfile
+      args:
+        - BASE_IMAGE=node:24.16.0-slim
+        - PNPM_VERSION=11.5.2
+    volumes:
+      - type: bind
+        source: ./apps
+        target: /workspace/apps
+      - type: volume
+        source: pnpm_store
+        target: /home/node/.local/share/pnpm/store
+    working_dir: /workspace/apps
+    command: sleep infinity
+    init: true
+  api:
+    build:
+      context: .
+      dockerfile: .docker/api/local.Dockerfile
+      args:
+        - BASE_IMAGE=node:24.16.0-slim
+        - PNPM_VERSION=11.5.2
+    volumes:
+      - type: bind
+        source: ./apps
+        target: /workspace/apps
+      - type: volume
+        source: pnpm_store
+        target: /home/node/.local/share/pnpm/store
+    working_dir: /workspace/apps
+    command: sleep infinity
+    init: true
+  worker:
+    build:
+      context: .
+      dockerfile: .docker/worker/local.Dockerfile
+      args:
+        - BASE_IMAGE=python:3.12.13-slim
+        - UV_VERSION=0.11.19
+    volumes:
+      - type: bind
+        source: ./worker
+        target: /workspace/worker
+      - type: volume
+        source: worker_venv
+        target: /workspace/worker/.venv
+      - type: volume
+        source: uv_cache
+        target: /home/dev/.cache/uv
+    working_dir: /workspace/worker
+    command: sleep infinity
+    init: true
+
+volumes:
+  pnpm_store:
+  uv_cache:
+  worker_venv:
